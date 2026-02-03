@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Budget & Paycheck Allocator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .input-field {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #f8fafc;
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            border-color: #38bdf8;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+        .result-card {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .result-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .progress-bar {
+            height: 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn {
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: #38bdf8;
+            color: #38bdf8;
+        }
+        .paycheck-display {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+    </style>
+<base target="_blank">
+</head>
+<body class="flex justify-center items-start">
+
+    <div class="w-full max-w-4xl space-y-6">
+        
+        <!-- Header -->
+        <div class="text-center space-y-2 mb-6">
+            <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
+                Smart Budget & Paycheck Allocator
+            </h1>
+            <p class="text-slate-400">Bill-First Allocation System with Live Paycheck Breakdown</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex justify-center gap-4 mb-4">
+            <button onclick="switchTab('budget')" id="tab-budget" class="tab-btn active px-6 py-3 rounded-lg border border-slate-600 text-slate-300 hover:border-slate-400">
+                📊 Budget Setup
+            </button>
+            <button onclick="switchTab('paycheck')" id="tab-paycheck" class="tab-btn px-6 py-3 rounded-lg border border-slate-600 text-slate-300 hover:border-slate-400">
+                💰 Paycheck Calculator
+            </button>
+        </div>
+
+        <!-- BUDGET SETUP TAB -->
+        <div id="view-budget" class="space-y-6">
+            <div class="glass-panel p-8 space-y-6">
+                <h2 class="text-2xl font-semibold text-white border-b border-slate-700 pb-4">Step 1: Enter Your Monthly Finances</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-slate-300">Monthly Income</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-3 text-slate-400">$</span>
+                            <input type="number" id="income" class="input-field w-full rounded-lg p-3 pl-8" placeholder="e.g. 5000" oninput="validateAndCalculate()">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-slate-300">Total Monthly Bills (Essentials)</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-3 text-slate-400">$</span>
+                            <input type="number" id="bills" class="input-field w-full rounded-lg p-3 pl-8" placeholder="e.g. 2500" oninput="validateAndCalculate()">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-slate-300">Average Monthly Leisure</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-3 text-slate-400">$</span>
+                            <input type="number" id="leisure" class="input-field w-full rounded-lg p-3 pl-8" placeholder="e.g. 800" oninput="validateAndCalculate()">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="error-msg" class="text-red-400 text-sm hidden text-center bg-red-900/20 p-3 rounded-lg">
+                    ⚠️ Bills cannot exceed total income. Please adjust.
+                </div>
+
+                <button onclick="saveBudget()" id="save-btn" class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-4 rounded-lg shadow-lg transform transition hover:-translate-y-1 opacity-50 cursor-not-allowed" disabled>
+                    💾 Save Budget & Continue to Paycheck Calculator
+                </button>
+            </div>
+
+            <!-- Budget Results Preview -->
+            <div id="budget-results" class="hidden space-y-6">
+                <div class="glass-panel p-6 border-l-4 border-emerald-500">
+                    <h3 class="text-xl font-bold text-emerald-400 mb-2">✓ Budget Calculated Successfully</h3>
+                    <p class="text-slate-300">Your allocation percentages have been determined. Save to unlock the Paycheck Calculator.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="glass-panel p-6 text-center border-t-4 border-rose-500">
+                        <p class="text-slate-400 text-sm uppercase tracking-wide">Bills</p>
+                        <p class="text-3xl font-bold text-rose-400 mt-2" id="preview-bills-pct">0%</p>
+                        <p class="text-slate-500 text-xs mt-1" id="preview-bills-dec">0.000</p>
+                    </div>
+                    <div class="glass-panel p-6 text-center border-t-4 border-amber-500">
+                        <p class="text-slate-400 text-sm uppercase tracking-wide">Spending</p>
+                        <p class="text-3xl font-bold text-amber-400 mt-2" id="preview-spending-pct">0%</p>
+                        <p class="text-slate-500 text-xs mt-1" id="preview-spending-dec">0.000</p>
+                    </div>
+                    <div class="glass-panel p-6 text-center border-t-4 border-emerald-500">
+                        <p class="text-slate-400 text-sm uppercase tracking-wide">Savings</p>
+                        <p class="text-3xl font-bold text-emerald-400 mt-2" id="preview-savings-pct">0%</p>
+                        <p class="text-slate-500 text-xs mt-1" id="preview-savings-dec">0.000</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAYCHECK CALCULATOR TAB -->
+        <div id="view-paycheck" class="hidden space-y-6">
+            
+            <!-- Locked State -->
+            <div id="paycheck-locked" class="glass-panel p-12 text-center">
+                <div class="text-6xl mb-4">🔒</div>
+                <h3 class="text-2xl font-bold text-slate-300 mb-2">Calculator Locked</h3>
+                <p class="text-slate-400 mb-6">Please complete the Budget Setup first to establish your allocation percentages.</p>
+                <button onclick="switchTab('budget')" class="px-6 py-3 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white font-semibold transition">
+                    Go to Budget Setup
+                </button>
+            </div>
+
+            <!-- Unlocked State -->
+            <div id="paycheck-unlocked" class="hidden space-y-6">
+                
+                <!-- Current Budget Reference -->
+                <div class="glass-panel p-4 flex flex-wrap justify-between items-center gap-4 bg-slate-800/50">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase">Current Budget Profile</p>
+                        <p class="text-sm text-slate-300" id="budget-summary">Loading...</p>
+                    </div>
+                    <button onclick="switchTab('budget')" class="text-sm text-cyan-400 hover:text-cyan-300 underline">
+                        Edit Budget
+                    </button>
+                </div>
+
+                <!-- Paycheck Input -->
+                <div class="glass-panel p-8 space-y-6 paycheck-display">
+                    <h2 class="text-2xl font-semibold text-white flex items-center gap-2">
+                        <span class="text-3xl">💵</span> Enter Your Paycheck
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-cyan-300">Paycheck Amount (Net)</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-slate-400">$</span>
+                                <input type="number" id="paycheck-amount" class="input-field w-full rounded-lg p-4 pl-8 text-xl font-bold" placeholder="e.g. 2500" oninput="calculatePaycheckBreakdown()">
+                            </div>
+                            <p class="text-xs text-slate-400">Enter the amount you received in this check</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-purple-300">Paycheck Frequency (Optional)</label>
+                            <select id="paycheck-freq" class="input-field w-full rounded-lg p-4 text-slate-300" onchange="calculatePaycheckBreakdown()">
+                                <option value="1">One-time / Manual Entry</option>
+                                <option value="0.5">Bi-Weekly (Half Month)</option>
+                                <option value="0.25">Weekly (Quarter Month)</option>
+                                <option value="2">Bi-Monthly (2x Month)</option>
+                            </select>
+                            <p class="text-xs text-slate-400">Auto-adjusts based on your monthly budget</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paycheck Breakdown Results -->
+                <div id="paycheck-results" class="hidden space-y-6">
+                    
+                    <!-- Total Allocation -->
+                    <div class="glass-panel p-6 text-center bg-gradient-to-r from-cyan-900/30 to-purple-900/30 border-cyan-500/30">
+                        <p class="text-slate-400 text-sm uppercase tracking-wider mb-2">Total Paycheck Allocation</p>
+                        <p class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400" id="paycheck-total">$0.00</p>
+                        <p class="text-slate-400 text-sm mt-2" id="paycheck-calc-desc"></p>
+                    </div>
+
+                    <!-- Breakdown Cards -->
+                    <div class="grid grid-cols-1 gap-4">
+                        
+                        <!-- Bills Card -->
+                        <div class="glass-panel p-6 border-l-4 border-rose-500 result-card">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h4 class="text-rose-400 font-bold text-lg flex items-center gap-2">
+                                        🏠 Bills (Priority)
+                                    </h4>
+                                    <p class="text-slate-400 text-sm">Essential fixed expenses</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-3xl font-bold text-white" id="pc-bills-amount">$0.00</p>
+                                    <p class="text-rose-400 font-mono text-sm" id="pc-bills-calc"></p>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="pc-bar-bills" class="progress-fill bg-rose-500" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between mt-2 text-xs text-slate-500">
+                                <span id="pc-bills-pct">0%</span>
+                                <span>Set aside immediately</span>
+                            </div>
+                        </div>
+
+                        <!-- Spending Card -->
+                        <div class="glass-panel p-6 border-l-4 border-amber-500 result-card" style="transition-delay: 100ms;">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h4 class="text-amber-400 font-bold text-lg flex items-center gap-2">
+                                        🛍️ Spending (Variable)
+                                    </h4>
+                                    <p class="text-slate-400 text-sm">Discretionary & leisure</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-3xl font-bold text-white" id="pc-spend-amount">$0.00</p>
+                                    <p class="text-amber-400 font-mono text-sm" id="pc-spend-calc"></p>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="pc-bar-spend" class="progress-fill bg-amber-500" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between mt-2 text-xs text-slate-500">
+                                <span id="pc-spend-pct">0%</span>
+                                <span>Available for use</span>
+                            </div>
+                        </div>
+
+                        <!-- Savings Card -->
+                        <div class="glass-panel p-6 border-l-4 border-emerald-500 result-card" style="transition-delay: 200ms;">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h4 class="text-emerald-400 font-bold text-lg flex items-center gap-2">
+                                        🏦 Savings
+                                    </h4>
+                                    <p class="text-slate-400 text-sm">Future goals & emergency fund</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-3xl font-bold text-white" id="pc-save-amount">$0.00</p>
+                                    <p class="text-emerald-400 font-mono text-sm" id="pc-save-calc"></p>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="pc-bar-save" class="progress-fill bg-emerald-500" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between mt-2 text-xs text-slate-500">
+                                <span id="pc-save-pct">0%</span>
+                                <span>Transfer to savings now</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Action Summary -->
+                    <div class="glass-panel p-6 bg-slate-800/80">
+                        <h4 class="text-white font-semibold mb-4 flex items-center gap-2">
+                            📋 Immediate Action Items
+                        </h4>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex items-center gap-3 p-3 bg-rose-900/20 rounded-lg border border-rose-500/20">
+                                <span class="text-rose-400 font-bold">1.</span>
+                                <span class="text-slate-300">Set aside <span id="action-bills" class="text-white font-bold">$0.00</span> for bills immediately</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-3 bg-amber-900/20 rounded-lg border border-amber-500/20">
+                                <span class="text-amber-400 font-bold">2.</span>
+                                <span class="text-slate-300">You have <span id="action-spend" class="text-white font-bold">$0.00</span> available for spending until next check</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-3 bg-emerald-900/20 rounded-lg border border-emerald-500/20">
+                                <span class="text-emerald-400 font-bold">3.</span>
+                                <span class="text-slate-300">Transfer <span id="action-save" class="text-white font-bold">$0.00</span> to your savings account today</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let budgetData = {
+            income: 0,
+            bills: 0,
+            spending: 0,
+            savings: 0,
+            pctBills: 0,
+            pctSpend: 0,
+            pctSave: 0,
+            isSet: false
+        };
+
+        function switchTab(tab) {
+            // Update buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+
+            // Update views
+            document.getElementById('view-budget').classList.add('hidden');
+            document.getElementById('view-paycheck').classList.add('hidden');
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+
+            if (tab === 'paycheck') {
+                updatePaycheckView();
+            }
+        }
+
+        function validateAndCalculate() {
+            const income = parseFloat(document.getElementById('income').value) || 0;
+            const bills = parseFloat(document.getElementById('bills').value) || 0;
+            const leisure = parseFloat(document.getElementById('leisure').value) || 0;
+            const errorMsg = document.getElementById('error-msg');
+            const saveBtn = document.getElementById('save-btn');
+
+            // Reset styles
+            document.querySelectorAll('.input-field').forEach(i => i.classList.remove('border-red-500'));
+            
+            if (bills > income && income > 0) {
+                document.getElementById('bills').classList.add('border-red-500');
+                errorMsg.classList.remove('hidden');
+                saveBtn.disabled = true;
+                saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('budget-results').classList.add('hidden');
+                return;
+            }
+
+            errorMsg.classList.add('hidden');
+
+            if (income > 0 && bills >= 0) {
+                const remaining = income - bills;
+                let spending = 0;
+                let savings = 0;
+
+                if (remaining > leisure) {
+                    spending = leisure;
+                    savings = remaining - leisure;
+                } else {
+                    spending = remaining;
+                    savings = 0;
+                }
+
+                const pctBills = bills / income;
+                const pctSpend = spending / income;
+                const pctSave = savings / income;
+
+                // Update preview
+                document.getElementById('preview-bills-pct').textContent = Math.round(pctBills * 100) + '%';
+                document.getElementById('preview-bills-dec').textContent = pctBills.toFixed(3);
+                document.getElementById('preview-spending-pct').textContent = Math.round(pctSpend * 100) + '%';
+                document.getElementById('preview-spending-dec').textContent = pctSpend.toFixed(3);
+                document.getElementById('preview-savings-pct').textContent = Math.round(pctSave * 100) + '%';
+                document.getElementById('preview-savings-dec').textContent = pctSave.toFixed(3);
+
+                document.getElementById('budget-results').classList.remove('hidden');
+                
+                // Enable save button
+                saveBtn.disabled = false;
+                saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function saveBudget() {
+            const income = parseFloat(document.getElementById('income').value);
+            const bills = parseFloat(document.getElementById('bills').value);
+            const leisure = parseFloat(document.getElementById('leisure').value) || 0;
+
+            const remaining = income - bills;
+            let spending = 0;
+            let savings = 0;
+
+            if (remaining > leisure) {
+                spending = leisure;
+                savings = remaining - leisure;
+            } else {
+                spending = remaining;
+                savings = 0;
+            }
+
+            budgetData = {
+                income: income,
+                bills: bills,
+                spending: spending,
+                savings: savings,
+                pctBills: bills / income,
+                pctSpend: spending / income,
+                pctSave: savings / income,
+                isSet: true
+            };
+
+            // Show success and switch
+            const btn = document.getElementById('save-btn');
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Saved! Redirecting...';
+            btn.classList.remove('from-blue-600', 'to-cyan-600');
+            btn.classList.add('from-emerald-600', 'to-emerald-500');
+
+            setTimeout(() => {
+                switchTab('paycheck');
+                btn.textContent = originalText;
+                btn.classList.add('from-blue-600', 'to-cyan-600');
+                btn.classList.remove('from-emerald-600', 'to-emerald-500');
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            }, 800);
+        }
+
+        function updatePaycheckView() {
+            if (!budgetData.isSet) {
+                document.getElementById('paycheck-locked').classList.remove('hidden');
+                document.getElementById('paycheck-unlocked').classList.add('hidden');
+            } else {
+                document.getElementById('paycheck-locked').classList.add('hidden');
+                document.getElementById('paycheck-unlocked').classList.remove('hidden');
+                
+                // Update summary
+                document.getElementById('budget-summary').innerHTML = `
+                    Monthly Income: <span class="text-cyan-400">$${budgetData.income.toLocaleString()}</span> | 
+                    Bills: <span class="text-rose-400">${Math.round(budgetData.pctBills * 100)}%</span> | 
+                    Spend: <span class="text-amber-400">${Math.round(budgetData.pctSpend * 100)}%</span> | 
+                    Save: <span class="text-emerald-400">${Math.round(budgetData.pctSave * 100)}%</span>
+                `;
+
+                // Recalculate if there's already a value
+                calculatePaycheckBreakdown();
+            }
+        }
+
+        function calculatePaycheckBreakdown() {
+            if (!budgetData.isSet) return;
+
+            const paycheckInput = parseFloat(document.getElementById('paycheck-amount').value) || 0;
+            const frequency = parseFloat(document.getElementById('paycheck-freq').value);
+            
+            if (paycheckInput <= 0) {
+                document.getElementById('paycheck-results').classList.add('hidden');
+                return;
+            }
+
+            // Calculate based on frequency
+            // If freq is 1 (manual/one-time), use the input directly
+            // If freq is 0.5 (bi-weekly), we might want to show what this represents proportionally
+            // But for allocation, we apply percentages to whatever they entered
+            
+            const amount = paycheckInput;
+            
+            const billsAmount = amount * budgetData.pctBills;
+            const spendAmount = amount * budgetData.pctSpend;
+            const saveAmount = amount * budgetData.pctSave;
+
+            // Update displays
+            document.getElementById('paycheck-total').textContent = formatCurrency(amount);
+            document.getElementById('paycheck-calc-desc').textContent = 
+                frequency === 1 ? 'Custom amount entered' : 
+                `Based on ${getFreqText(frequency)} schedule (${(frequency * 100).toFixed(0)}% of monthly)`;
+
+            // Bills
+            document.getElementById('pc-bills-amount').textContent = formatCurrency(billsAmount);
+            document.getElementById('pc-bills-calc').textContent = `$${amount.toFixed(2)} × ${budgetData.pctBills.toFixed(3)}`;
+            document.getElementById('pc-bills-pct').textContent = Math.round(budgetData.pctBills * 100) + '%';
+            document.getElementById('pc-bar-bills').style.width = (budgetData.pctBills * 100) + '%';
+            document.getElementById('action-bills').textContent = formatCurrency(billsAmount);
+
+            // Spending
+            document.getElementById('pc-spend-amount').textContent = formatCurrency(spendAmount);
+            document.getElementById('pc-spend-calc').textContent = `$${amount.toFixed(2)} × ${budgetData.pctSpend.toFixed(3)}`;
+            document.getElementById('pc-spend-pct').textContent = Math.round(budgetData.pctSpend * 100) + '%';
+            document.getElementById('pc-bar-spend').style.width = (budgetData.pctSpend * 100) + '%';
+            document.getElementById('action-spend').textContent = formatCurrency(spendAmount);
+
+            // Savings
+            document.getElementById('pc-save-amount').textContent = formatCurrency(saveAmount);
+            document.getElementById('pc-save-calc').textContent = `$${amount.toFixed(2)} × ${budgetData.pctSave.toFixed(3)}`;
+            document.getElementById('pc-save-pct').textContent = Math.round(budgetData.pctSave * 100) + '%';
+            document.getElementById('pc-bar-save').style.width = (budgetData.pctSave * 100) + '%';
+            document.getElementById('action-save').textContent = formatCurrency(saveAmount);
+
+            // Show results with animation
+            const resultsDiv = document.getElementById('paycheck-results');
+            resultsDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                document.querySelectorAll('#paycheck-results .result-card').forEach(card => {
+                    card.classList.add('visible');
+                });
+            }, 50);
+        }
+
+        function getFreqText(freq) {
+            if (freq === 0.25) return 'Weekly';
+            if (freq === 0.5) return 'Bi-Weekly';
+            if (freq === 2) return 'Bi-Monthly';
+            return 'Monthly';
+        }
+
+        function formatCurrency(num) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+        }
+    </script>
+</body>
+</html>
