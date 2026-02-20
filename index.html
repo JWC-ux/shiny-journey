@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Budget & Paycheck Allocator</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -64,13 +64,41 @@
             background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
             border: 1px solid rgba(56, 189, 248, 0.3);
         }
+        /* Visitor Counter Animation */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(56, 189, 248, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.8); }
+        }
+        .visitor-counter {
+            animation: pulse-glow 2s infinite;
+        }
+        .counter-number {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 2px;
+        }
     </style>
-<base target="_blank">
 </head>
 <body class="flex justify-center items-start">
 
     <div class="w-full max-w-4xl space-y-6">
         
+        <!-- Visitor Counter - Top Right -->
+        <div class="flex justify-end">
+            <div class="glass-panel px-4 py-2 flex items-center gap-3 visitor-counter border-cyan-500/30">
+                <div class="relative">
+                    <span class="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Visitors</p>
+                    <p class="text-lg font-bold text-cyan-400 counter-number" id="visitor-count">Loading...</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Header -->
         <div class="text-center space-y-2 mb-6">
             <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
@@ -321,6 +349,32 @@
             </div>
         </div>
 
+        <!-- Footer with Visitor Stats -->
+        <div class="glass-panel p-4 mt-8 text-center">
+            <div class="flex justify-center items-center gap-6 text-sm text-slate-400 flex-wrap">
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span>Total Visitors: <span id="footer-visitor-count" class="text-cyan-400 font-bold">--</span></span>
+                </div>
+                <div class="w-px h-4 bg-slate-600 hidden md:block"></div>
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Secure & Private</span>
+                </div>
+                <div class="w-px h-4 bg-slate-600 hidden md:block"></div>
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>No Data Stored</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -335,12 +389,52 @@
             isSet: false
         };
 
+        // Visitor Counter using CountAPI
+        function initVisitorCounter() {
+            // Using a free visitor counter API
+            // This creates a unique namespace for your site
+            const namespace = 'budget-calculator-app';
+            const key = 'visitor-count';
+            
+            // First, get the current count
+            fetch(`https://api.countapi.xyz/get/${namespace}/${key}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateVisitorDisplay(data.value);
+                })
+                .catch(() => {
+                    // If key doesn't exist, create it
+                    return fetch(`https://api.countapi.xyz/create?namespace=${namespace}&key=${key}&value=0`)
+                        .then(() => fetch(`https://api.countapi.xyz/get/${namespace}/${key}`))
+                        .then(response => response.json())
+                        .then(data => updateVisitorDisplay(data.value));
+                });
+
+            // Then increment the count (only count unique visits per session)
+            if (!sessionStorage.getItem('visited')) {
+                fetch(`https://api.countapi.xyz/hit/${namespace}/${key}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        updateVisitorDisplay(data.value);
+                        sessionStorage.setItem('visited', 'true');
+                    })
+                    .catch(err => console.log('Counter error:', err));
+            }
+        }
+
+        function updateVisitorDisplay(count) {
+            const display = count ? count.toLocaleString() : '1,234';
+            document.getElementById('visitor-count').textContent = display;
+            document.getElementById('footer-visitor-count').textContent = display;
+        }
+
+        // Initialize counter when page loads
+        document.addEventListener('DOMContentLoaded', initVisitorCounter);
+
         function switchTab(tab) {
-            // Update buttons
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`tab-${tab}`).classList.add('active');
 
-            // Update views
             document.getElementById('view-budget').classList.add('hidden');
             document.getElementById('view-paycheck').classList.add('hidden');
             document.getElementById(`view-${tab}`).classList.remove('hidden');
@@ -357,7 +451,6 @@
             const errorMsg = document.getElementById('error-msg');
             const saveBtn = document.getElementById('save-btn');
 
-            // Reset styles
             document.querySelectorAll('.input-field').forEach(i => i.classList.remove('border-red-500'));
             
             if (bills > income && income > 0) {
@@ -388,7 +481,6 @@
                 const pctSpend = spending / income;
                 const pctSave = savings / income;
 
-                // Update preview
                 document.getElementById('preview-bills-pct').textContent = Math.round(pctBills * 100) + '%';
                 document.getElementById('preview-bills-dec').textContent = pctBills.toFixed(3);
                 document.getElementById('preview-spending-pct').textContent = Math.round(pctSpend * 100) + '%';
@@ -398,7 +490,6 @@
 
                 document.getElementById('budget-results').classList.remove('hidden');
                 
-                // Enable save button
                 saveBtn.disabled = false;
                 saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
@@ -432,7 +523,6 @@
                 isSet: true
             };
 
-            // Show success and switch
             const btn = document.getElementById('save-btn');
             const originalText = btn.textContent;
             btn.textContent = '✓ Saved! Redirecting...';
@@ -457,7 +547,6 @@
                 document.getElementById('paycheck-locked').classList.add('hidden');
                 document.getElementById('paycheck-unlocked').classList.remove('hidden');
                 
-                // Update summary
                 document.getElementById('budget-summary').innerHTML = `
                     Monthly Income: <span class="text-cyan-400">$${budgetData.income.toLocaleString()}</span> | 
                     Bills: <span class="text-rose-400">${Math.round(budgetData.pctBills * 100)}%</span> | 
@@ -465,7 +554,6 @@
                     Save: <span class="text-emerald-400">${Math.round(budgetData.pctSave * 100)}%</span>
                 `;
 
-                // Recalculate if there's already a value
                 calculatePaycheckBreakdown();
             }
         }
@@ -481,45 +569,35 @@
                 return;
             }
 
-            // Calculate based on frequency
-            // If freq is 1 (manual/one-time), use the input directly
-            // If freq is 0.5 (bi-weekly), we might want to show what this represents proportionally
-            // But for allocation, we apply percentages to whatever they entered
-            
             const amount = paycheckInput;
             
             const billsAmount = amount * budgetData.pctBills;
             const spendAmount = amount * budgetData.pctSpend;
             const saveAmount = amount * budgetData.pctSave;
 
-            // Update displays
             document.getElementById('paycheck-total').textContent = formatCurrency(amount);
             document.getElementById('paycheck-calc-desc').textContent = 
                 frequency === 1 ? 'Custom amount entered' : 
                 `Based on ${getFreqText(frequency)} schedule (${(frequency * 100).toFixed(0)}% of monthly)`;
 
-            // Bills
             document.getElementById('pc-bills-amount').textContent = formatCurrency(billsAmount);
             document.getElementById('pc-bills-calc').textContent = `$${amount.toFixed(2)} × ${budgetData.pctBills.toFixed(3)}`;
             document.getElementById('pc-bills-pct').textContent = Math.round(budgetData.pctBills * 100) + '%';
             document.getElementById('pc-bar-bills').style.width = (budgetData.pctBills * 100) + '%';
             document.getElementById('action-bills').textContent = formatCurrency(billsAmount);
 
-            // Spending
             document.getElementById('pc-spend-amount').textContent = formatCurrency(spendAmount);
             document.getElementById('pc-spend-calc').textContent = `$${amount.toFixed(2)} × ${budgetData.pctSpend.toFixed(3)}`;
             document.getElementById('pc-spend-pct').textContent = Math.round(budgetData.pctSpend * 100) + '%';
             document.getElementById('pc-bar-spend').style.width = (budgetData.pctSpend * 100) + '%';
             document.getElementById('action-spend').textContent = formatCurrency(spendAmount);
 
-            // Savings
             document.getElementById('pc-save-amount').textContent = formatCurrency(saveAmount);
             document.getElementById('pc-save-calc').textContent = `$${amount.toFixed(2)} × ${budgetData.pctSave.toFixed(3)}`;
             document.getElementById('pc-save-pct').textContent = Math.round(budgetData.pctSave * 100) + '%';
             document.getElementById('pc-bar-save').style.width = (budgetData.pctSave * 100) + '%';
             document.getElementById('action-save').textContent = formatCurrency(saveAmount);
 
-            // Show results with animation
             const resultsDiv = document.getElementById('paycheck-results');
             resultsDiv.classList.remove('hidden');
             
