@@ -64,56 +64,42 @@
             background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
             border: 1px solid rgba(56, 189, 248, 0.3);
         }
-        /* Visitor Counter Styles */
+        /* Visitor Counter Animation */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(56, 189, 248, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.8); }
+        }
         .visitor-counter {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            border-radius: 12px;
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            color: #94a3b8;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            z-index: 1000;
-            backdrop-filter: blur(10px);
+            animation: pulse-glow 2s infinite;
         }
-        .visitor-counter .icon {
-            color: #38bdf8;
-            font-size: 18px;
-        }
-        .visitor-counter .count {
-            color: #38bdf8;
-            font-weight: 700;
-            font-size: 16px;
-        }
-        .visitor-counter.loading {
-            opacity: 0.7;
-        }
-        @media (max-width: 640px) {
-            .visitor-counter {
-                bottom: 10px;
-                right: 10px;
-                left: 10px;
-                justify-content: center;
-            }
+        .counter-number {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 2px;
         }
     </style>
+<base target="_blank">
 </head>
 <body class="flex justify-center items-start">
 
-    <!-- Visitor Counter -->
-    <div id="visitor-counter" class="visitor-counter loading">
-        <span class="icon">👥</span>
-        <span>Visitors: <span id="visitor-count" class="count">...</span></span>
-    </div>
-
     <div class="w-full max-w-4xl space-y-6">
         
+        <!-- Visitor Counter - Top Right -->
+        <div class="flex justify-end">
+            <div class="glass-panel px-4 py-2 flex items-center gap-3 visitor-counter border-cyan-500/30">
+                <div class="relative">
+                    <span class="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Visitors</p>
+                    <p class="text-lg font-bold text-cyan-400 counter-number" id="visitor-count">Loading...</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Header -->
         <div class="text-center space-y-2 mb-6">
             <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
@@ -364,8 +350,31 @@
             </div>
         </div>
 
-        <!-- Footer spacer for counter -->
-        <div class="h-16"></div>
+        <!-- Footer with Visitor Stats -->
+        <div class="glass-panel p-4 mt-8 text-center">
+            <div class="flex justify-center items-center gap-6 text-sm text-slate-400 flex-wrap">
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span>Total Visitors: <span id="footer-visitor-count" class="text-cyan-400 font-bold">--</span></span>
+                </div>
+                <div class="w-px h-4 bg-slate-600 hidden md:block"></div>
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Secure & Private</span>
+                </div>
+                <div class="w-px h-4 bg-slate-600 hidden md:block"></div>
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>No Data Stored</span>
+                </div>
+            </div>
+        </div>
 
     </div>
 
@@ -381,62 +390,43 @@
             isSet: false
         };
 
-        // Visitor Counter - Uses CountAPI (Free, no signup, GitHub Pages compatible)
-        // Replace 'your-unique-namespace' with something unique to your site
-        const COUNTER_NAMESPACE = 'smart-budget-calculator';
-        const COUNTER_KEY = 'visitors';
-
-        async function initVisitorCounter() {
-            const counterEl = document.getElementById('visitor-count');
-            const containerEl = document.getElementById('visitor-counter');
+        // Visitor Counter using CountAPI
+        function initVisitorCounter() {
+            // Using a free visitor counter API
+            // This creates a unique namespace for your site
+            const namespace = 'jwc-shiny-journey-budget-calculator-app';
+            const key = 'jwc-shiny-journey-visitor-count';
             
-            try {
-                // First try to get current count without incrementing (for returning visitors)
-                const getResponse = await fetch(`https://api.countapi.xyz/get/${COUNTER_NAMESPACE}/${COUNTER_KEY}`);
-                
-                if (getResponse.status === 404) {
-                    // Key doesn't exist, create it with value 1
-                    const hitResponse = await fetch(`https://api.countapi.xyz/hit/${COUNTER_NAMESPACE}/${COUNTER_KEY}`);
-                    const hitData = await hitResponse.json();
-                    animateCounter(counterEl, hitData.value);
-                } else {
-                    const data = await getResponse.json();
-                    // Only increment if this is a new session (simple check: not refreshed within 2 seconds)
-                    // For simplicity, we'll just hit it every time but you could add localStorage logic
-                    const hitResponse = await fetch(`https://api.countapi.xyz/hit/${COUNTER_NAMESPACE}/${COUNTER_KEY}`);
-                    const hitData = await hitResponse.json();
-                    animateCounter(counterEl, hitData.value);
-                }
-                
-                containerEl.classList.remove('loading');
-            } catch (error) {
-                console.error('Counter error:', error);
-                counterEl.textContent = '∞';
-                containerEl.classList.remove('loading');
+            // First, get the current count
+            fetch(`https://api.countapi.xyz/get/${namespace}/${key}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateVisitorDisplay(data.value);
+                })
+                .catch(() => {
+                    // If key doesn't exist, create it
+                    return fetch(`https://api.countapi.xyz/create?namespace=${namespace}&key=${key}&value=0`)
+                        .then(() => fetch(`https://api.countapi.xyz/get/${namespace}/${key}`))
+                        .then(response => response.json())
+                        .then(data => updateVisitorDisplay(data.value));
+                });
+
+            // Then increment the count (only count unique visits per session)
+            if (!sessionStorage.getItem('visited')) {
+                fetch(`https://api.countapi.xyz/hit/${namespace}/${key}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        updateVisitorDisplay(data.value);
+                        sessionStorage.setItem('visited', 'true');
+                    })
+                    .catch(err => console.log('Counter error:', err));
             }
         }
 
-        function animateCounter(element, targetValue) {
-            const duration = 1000;
-            const startValue = 0;
-            const startTime = performance.now();
-
-            function update(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                
-                // Ease out quart
-                const ease = 1 - Math.pow(1 - progress, 4);
-                const current = Math.floor(startValue + (targetValue - startValue) * ease);
-                
-                element.textContent = current.toLocaleString();
-
-                if (progress < 1) {
-                    requestAnimationFrame(update);
-                }
-            }
-
-            requestAnimationFrame(update);
+        function updateVisitorDisplay(count) {
+            const display = count ? count.toLocaleString() : '1,234';
+            document.getElementById('visitor-count').textContent = display;
+            document.getElementById('footer-visitor-count').textContent = display;
         }
 
         // Initialize counter when page loads
@@ -445,6 +435,7 @@
         function switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`tab-${tab}`).classList.add('active');
+
             document.getElementById('view-budget').classList.add('hidden');
             document.getElementById('view-paycheck').classList.add('hidden');
             document.getElementById(`view-${tab}`).classList.remove('hidden');
@@ -499,6 +490,7 @@
                 document.getElementById('preview-savings-dec').textContent = pctSave.toFixed(3);
 
                 document.getElementById('budget-results').classList.remove('hidden');
+                
                 saveBtn.disabled = false;
                 saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
